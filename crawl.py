@@ -68,4 +68,7 @@ for url, page in pages.items():
 
 pages_json = json.dumps(pages_object)
 
-print(pages_json)
+with open('pages.json', 'w') as pages_file:
+    pages_file.write(pages_json)
+    print('wrote to pages.json')
+
