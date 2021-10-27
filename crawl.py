@@ -1,8 +1,11 @@
 import json
 import csv
 from urllib import request
+from pathlib import Path
 import bs4
 from bs4 import BeautifulSoup, NavigableString
+
+PAGES_FILE = Path('pages.json')
 
 def network_get(url):
     req = request.Request(url)
@@ -53,22 +56,29 @@ def crawl(url, depth=1, jump_domains=True):
                 pass
     return to_return
 
-whitelist = list()
-with open('whitelists.csv') as whitelist_file:
-    reader = csv.reader(whitelist_file)
-    for row in reader:
-        whitelist += row
+if PAGES_FILE.exists():
+    pages = json.load(open(PAGES_FILE))
+else:
+    whitelist = list()
+    with open('whitelists.csv') as whitelist_file:
+        reader = csv.reader(whitelist_file)
+        for row in reader:
+            whitelist += row
 
-for whitelisted in whitelist:
-    crawl(whitelisted)
+    for whitelisted in whitelist:
+        crawl(whitelisted)
 
-pages_object = dict()
-for url, page in pages.items():
-    pages_object[url] = page.value()
+    pages_object = dict()
+    for url, page in pages.items():
+        pages_object[url] = page.value()
 
-pages_json = json.dumps(pages_object)
+    pages_json = json.dumps(pages_object)
 
-with open('pages.json', 'w') as pages_file:
-    pages_file.write(pages_json)
-    print('wrote to pages.json')
+    with open(PAGES_JSON, 'w') as pages_file:
+        pages_file.write(pages_json)
+        print(f'wrote to {str(PAGES_FILE)}')
+
+    pages = pages_object
+
+print(pages)
 
