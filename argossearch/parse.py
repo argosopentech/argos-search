@@ -30,7 +30,18 @@ class Page:
         self.links = [Link(link) for link in self.soup.find_all('a')]
 
 
-page = Page("https://www.argosopentech.com")
-for link in page.links:
-    print(link)
+def crawl_domain(url, depth=2):
+    if depth < 0: return list()
+    print('crawl_domain', f'url={url}', f'depth={depth}')
+    page = Page(url)
+    to_return = [page]
+    if len(page.links) > 0:
+        for link in page.links:
+            try:
+                crawl = crawl_domain(link.url, depth - 1)
+                to_return += crawl
+            except:
+                pass
+    return to_return
 
+crawl = crawl_domain('https://www.argosopentech.com')
