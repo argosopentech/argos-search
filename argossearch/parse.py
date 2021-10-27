@@ -7,16 +7,18 @@ def get_text(bs):
         return str(bs)
     return "\n".join([get_text(content) for content in bs.contents])
 
-def get(url):
+def network_get(url):
     req = request.Request(url)
     response = request.urlopen(req)
-    response_str = response.read().decode()
-    soup = BeautifulSoup(response_str, features="html.parser")
-    return get_text(soup)
+    return response.read().decode()
 
 class Page:
     def __init__(self, url):
         self.url = url
-        self.text = get(url)
+        self.raw_text = network_get(self.url)
+        self.soup = BeautifulSoup(self.raw_text, features="html.parser")
+        self.text = get_text(self.soup)
+        print(self.text)
 
-print(get("https://www.argosopentech.com"))
+
+page = Page("https://www.argosopentech.com")
