@@ -14,5 +14,9 @@ def get(url):
     soup = BeautifulSoup(response_str, features="html.parser")
     return get_text(soup)
 
-with open("index.html") as fp:
-    print(get("https://www.argosopentech.com"))
+class Page:
+    def __init__(self, url):
+        self.url = url
+        self.text = get(url)
+
+print(get("https://www.argosopentech.com"))
