@@ -1,3 +1,4 @@
+import math
 import json
 import csv
 from urllib import request
@@ -24,9 +25,10 @@ class Page:
         soup = BeautifulSoup(raw_text, features="html.parser")
         self.links = [str(link['href']) for link in soup.find_all('a')]
         text = get_text(soup)
+        self.rank = 1
 
     def value(self):
-        return json.dumps({'url': self.url, 'links': self.links})
+        return {'url': self.url, 'links': self.links, 'rank': self.rank}
 
     def __str__(self):
         return f'Page: {self.url}'
@@ -74,11 +76,25 @@ else:
 
     pages_json = json.dumps(pages_object)
 
-    with open(PAGES_JSON, 'w') as pages_file:
+    with open(PAGES_FILE, 'w') as pages_file:
         pages_file.write(pages_json)
         print(f'wrote to {str(PAGES_FILE)}')
 
     pages = pages_object
+
+# Calculate page rank
+for i in range(3):
+    for url, page in pages.items():
+        links = page['links']
+        value_per_link = float(page['rank']) / len(links)
+        for link in links:
+            linked_page = pages.get(link)
+            if linked_page != None:
+                linked_page['rank'] += value_per_link
+
+    for page in pages.values():
+        print(page['rank'])
+        page['rank'] = abs(math.log(page['rank']))
 
 print(pages)
 
