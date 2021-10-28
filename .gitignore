@@ -1,4 +1,4 @@
 env/
-source
-target
+pages.json
+words.json
 *~
