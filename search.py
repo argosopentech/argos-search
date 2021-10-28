@@ -227,11 +227,12 @@ def search(query):
     return results
 
 
-results = search(input("Enter search query: "))
+def run_search(query):
+    results = search(query)
 
-ranked_results = list(
-    map(lambda x: x[0], sorted(results.items(), key=lambda x: x[1], reverse=True))
-)
+    ranked_results = list(
+        map(lambda x: x[0], sorted(results.items(), key=lambda x: x[1], reverse=True))
+    )
 
-print(ranked_results)
+    return ranked_results
 
