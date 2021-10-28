@@ -25,12 +25,19 @@ def get_text(bs):
 
 
 class Page:
-    def __init__(self, url, download_page=True):
+    def __init__(self, url, get_page=True):
         self.url = url
-        if download_page:
+        if get_page:
             raw_text = network_get(self.url)
             self.words = dict(
-                Counter(list(filter(lambda x: len(x) < 10, raw_text.split(" "))))
+                Counter(
+                    list(
+                        filter(
+                            lambda x: len(x) < 10,
+                            [word.lower() for word in raw_text.split(" ")],
+                        )
+                    )
+                )
             )
             soup = BeautifulSoup(raw_text, features="html.parser")
             self.links = [str(link["href"]) for link in soup.find_all("a")]
@@ -46,10 +53,10 @@ class Page:
         }
 
     def load(value):
-        to_return = Page(value['url'], False)
-        to_return.links = value['links']
-        to_return.rank = value['rank']
-        to_return.words = value['words']
+        to_return = Page(value["url"], False)
+        to_return.links = value["links"]
+        to_return.rank = value["rank"]
+        to_return.words = value["words"]
 
     def __str__(self):
         return f"Page: {self.url}"
@@ -84,6 +91,7 @@ def crawl(url, depth=1, jump_domains=True):
                 pass
     return to_return
 
+
 if PAGES_FILE.exists():
     pages_object = json.load(open(PAGES_FILE))
     print(f"Read from {str(PAGES_FILE)}")
@@ -111,16 +119,18 @@ else:
         pages_file.write(pages_json)
         print(f"wrote to {str(PAGES_FILE)}")
 
+
 class RankedPage:
     def __init__(self, url, score):
         self.url = url
         self.score = score
 
     def value(self):
-        return {'url': self.url, 'score': self.score}
+        return {"url": self.url, "score": self.score}
 
     def load(value):
-        return RankedPage(value['url'], value['score'])
+        return RankedPage(value["url"], value["score"])
+
 
 class Word:
     RANKED_PAGES_COUNT = 10
@@ -148,8 +158,11 @@ class Word:
 
     def load(value):
         to_return = Word(list())
-        to_return.ranked_pages = [RankedPage.load(ranked_page_value) for ranked_page_value in value]
+        to_return.ranked_pages = [
+            RankedPage.load(ranked_page_value) for ranked_page_value in value
+        ]
         return to_return
+
 
 if WORDS_FILE.exists():
     words_object = json.load(open(WORDS_FILE))
@@ -172,8 +185,6 @@ else:
 
         for page in pages.values():
             page.rank = abs(math.log(page.rank))
-
-
 
     # dict word(str) -> Word
     words = dict()
@@ -201,16 +212,16 @@ else:
         print(f"wrote to {str(WORDS_FILE)}")
 
 
-query = input('Enter search query: ')
+query = input("Enter search query: ").lower()
 
 ranked_word = words.get(query)
 if ranked_word is None:
-    print('Could not find results.')
+    print("Could not find results.")
     sys.exit(0)
-    
+
 ranked_pages = ranked_word.ranked_pages
 if len(ranked_pages) < 1:
-    print('Could not find results.')
+    print("Could not find results.")
     sys.exit(0)
 
 best_result = ranked_pages[0]
@@ -218,7 +229,3 @@ for page in ranked_pages:
     if page.score > best_result.score:
         best_result = page
 print(best_result.url)
-
-
-    
-
