@@ -1,3 +1,4 @@
+import sys
 import math
 import json
 import csv
@@ -111,7 +112,6 @@ for i in range(3):
                 linked_page["rank"] += value_per_link
 
     for page in pages.values():
-        print(page["rank"])
         page["rank"] = abs(math.log(page["rank"]))
 
 
@@ -120,23 +120,62 @@ class RankedPage:
         self.url = url
         self.score = score
 
-
 class Word:
+    RANKED_PAGES_COUNT = 10
+    
     def __init__(self, word):
         self.word = word
         self.ranked_pages = list()
 
     def add(self, ranked_page):
         worst_page_index = -1
-        for current_page in self.ranked_pages:
+        for i in range(len(self.ranked_pages)):
+            current_page = self.ranked_pages[i]
             if (
                 worst_page_index == -1
-                or current_pages.score < self.ranked_pages[worst_page_index].score
+                or current_page.score < self.ranked_pages[worst_page_index].score
             ):
-                pass
+                worst_page_index = i
 
-        if len(self.ranked_pages) < 10:
-            pass
+        if len(self.ranked_pages) < Word.RANKED_PAGES_COUNT:
+            self.ranked_pages.append(ranked_page)
+        elif ranked_page.score > self.ranked_pages[worst_page_index].score:
+            self.ranked_pages[worst_page_index] = ranked_page
+        
+
+# dict word(str) -> Word
+words = dict()
+
+for url, page in pages.items():
+    total_word_count = sum(page['words'].values())
+    for word_value, word_count in page['words'].items():
+        word_score = (float(word_count) / total_word_count) * page['rank']
+        ranked_page = RankedPage(url, word_score)
+        ranked_word = words.get(word_value)
+        if ranked_word == None:
+            ranked_word = Word(word_value)
+            words[word_value] = ranked_word
+        ranked_word.add(ranked_page)
 
 
-print(pages)
+query = input('Enter search query: ')
+
+ranked_word = words.get(query)
+if ranked_word is None:
+    print('Could not find results.')
+    sys.exit(0)
+    
+ranked_pages = ranked_word.ranked_pages
+if len(ranked_pages) < 1:
+    print('Could not find results.')
+    sys.exit(0)
+
+best_result = ranked_pages[0]
+for page in ranked_pages:
+    if page.score > best_result.score:
+        best_result = page
+print(best_result.url)
+
+
+    
+
