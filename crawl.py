@@ -25,16 +25,17 @@ def get_text(bs):
 
 
 class Page:
-    def __init__(self, url):
+    def __init__(self, url, download_page=True):
         self.url = url
-        raw_text = network_get(self.url)
-        self.words = dict(
-            Counter(list(filter(lambda x: len(x) < 10, raw_text.split(" "))))
-        )
-        soup = BeautifulSoup(raw_text, features="html.parser")
-        self.links = [str(link["href"]) for link in soup.find_all("a")]
-        text = get_text(soup)
-        self.rank = 1
+        if download_page:
+            raw_text = network_get(self.url)
+            self.words = dict(
+                Counter(list(filter(lambda x: len(x) < 10, raw_text.split(" "))))
+            )
+            soup = BeautifulSoup(raw_text, features="html.parser")
+            self.links = [str(link["href"]) for link in soup.find_all("a")]
+            text = get_text(soup)
+            self.rank = 1
 
     def value(self):
         return {
@@ -43,6 +44,12 @@ class Page:
             "rank": self.rank,
             "words": self.words,
         }
+
+    def load(value):
+        to_return = Page(value['url'], False)
+        to_return.links = value['links']
+        to_return.rank = value['rank']
+        to_return.words = value['words']
 
     def __str__(self):
         return f"Page: {self.url}"
@@ -77,10 +84,13 @@ def crawl(url, depth=1, jump_domains=True):
                 pass
     return to_return
 
-
 if PAGES_FILE.exists():
-    pages = json.load(open(PAGES_FILE))
+    pages_object = json.load(open(PAGES_FILE))
     print(f"Read from {str(PAGES_FILE)}")
+
+    for url, page_value in pages_object.items():
+        pages[url] = Page.load(page_value)
+
 else:
     whitelist = list()
     with open("whitelists.csv") as whitelist_file:
@@ -100,8 +110,6 @@ else:
     with open(PAGES_FILE, "w") as pages_file:
         pages_file.write(pages_json)
         print(f"wrote to {str(PAGES_FILE)}")
-
-    pages = pages_object
 
 class RankedPage:
     def __init__(self, url, score):
@@ -155,15 +163,15 @@ else:
     # Calculate page rank
     for i in range(3):
         for url, page in pages.items():
-            links = page["links"]
-            value_per_link = float(page["rank"]) / len(links)
+            links = page.links
+            value_per_link = float(page.rank) / len(links)
             for link in links:
                 linked_page = pages.get(link)
                 if linked_page != None:
-                    linked_page["rank"] += value_per_link
+                    linked_page.rank += value_per_link
 
         for page in pages.values():
-            page["rank"] = abs(math.log(page["rank"]))
+            page.rank = abs(math.log(page.rank))
 
 
 
@@ -172,9 +180,9 @@ else:
 
     # Build word lookup
     for url, page in pages.items():
-        total_word_count = sum(page['words'].values())
-        for word_value, word_count in page['words'].items():
-            word_score = (float(word_count) / total_word_count) * page['rank']
+        total_word_count = sum(page.words.values())
+        for word_value, word_count in page.words.items():
+            word_score = (float(word_count) / total_word_count) * page.rank
             ranked_page = RankedPage(url, word_score)
             ranked_word = words.get(word_value)
             if ranked_word == None:
