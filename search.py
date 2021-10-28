@@ -4,12 +4,13 @@ import json
 import csv
 from urllib import request
 from pathlib import Path
-from collections import Counter
+from collections import Counter, defaultdict
 import bs4
 from bs4 import BeautifulSoup, NavigableString
 
 PAGES_FILE = Path("pages.json")
 WORDS_FILE = Path("words.json")
+MAX_WORD_LENGTH = 20
 
 
 def network_get(url):
@@ -33,7 +34,7 @@ class Page:
                 Counter(
                     list(
                         filter(
-                            lambda x: len(x) < 10,
+                            lambda x: len(x) < MAX_WORD_LENGTH,
                             [word.lower() for word in raw_text.split(" ")],
                         )
                     )
@@ -212,20 +213,24 @@ else:
         print(f"wrote to {str(WORDS_FILE)}")
 
 
-query = input("Enter search query: ").lower()
+def search(query):
+    query_words = list(filter(lambda x: len(x) < MAX_WORD_LENGTH, query.split(" ")))
+    results = defaultdict(int)  # url (str) -> score (float)
 
-ranked_word = words.get(query)
-if ranked_word is None:
-    print("Could not find results.")
-    sys.exit(0)
+    for query_word in query_words:
+        ranked_word = words.get(query_word)
+        if ranked_word is not None:
+            ranked_pages = ranked_word.ranked_pages
+            if len(ranked_pages) > 0:
+                for page in ranked_pages:
+                    results[page.url] += page.score
+    return results
 
-ranked_pages = ranked_word.ranked_pages
-if len(ranked_pages) < 1:
-    print("Could not find results.")
-    sys.exit(0)
 
-best_result = ranked_pages[0]
-for page in ranked_pages:
-    if page.score > best_result.score:
-        best_result = page
-print(best_result.url)
+results = search(input("Enter search query: "))
+
+ranked_results = list(
+    map(lambda x: x[0], sorted(results.items(), key=lambda x: x[1], reverse=True))
+)
+
+print(ranked_results)
