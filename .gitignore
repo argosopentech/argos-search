@@ -3,3 +3,4 @@ pages.json
 words.json
 *~
 __pycache__/
+whitelist.csv
