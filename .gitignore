@@ -2,3 +2,4 @@ env/
 pages.json
 words.json
 *~
+__pycache__/
