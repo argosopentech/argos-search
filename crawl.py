@@ -9,6 +9,7 @@ import bs4
 from bs4 import BeautifulSoup, NavigableString
 
 PAGES_FILE = Path("pages.json")
+WORDS_FILE = Path("words.json")
 
 
 def network_get(url):
@@ -79,6 +80,7 @@ def crawl(url, depth=1, jump_domains=True):
 
 if PAGES_FILE.exists():
     pages = json.load(open(PAGES_FILE))
+    print(f"Read from {str(PAGES_FILE)}")
 else:
     whitelist = list()
     with open("whitelists.csv") as whitelist_file:
@@ -101,31 +103,22 @@ else:
 
     pages = pages_object
 
-# Calculate page rank
-for i in range(3):
-    for url, page in pages.items():
-        links = page["links"]
-        value_per_link = float(page["rank"]) / len(links)
-        for link in links:
-            linked_page = pages.get(link)
-            if linked_page != None:
-                linked_page["rank"] += value_per_link
-
-    for page in pages.values():
-        page["rank"] = abs(math.log(page["rank"]))
-
-
 class RankedPage:
     def __init__(self, url, score):
         self.url = url
         self.score = score
 
+    def value(self):
+        return {'url': self.url, 'score': self.score}
+
+    def load(value):
+        return RankedPage(value['url'], value['score'])
+
 class Word:
     RANKED_PAGES_COUNT = 10
-    
-    def __init__(self, word):
-        self.word = word
-        self.ranked_pages = list()
+
+    def __init__(self, ranked_pages):
+        self.ranked_pages = ranked_pages
 
     def add(self, ranked_page):
         worst_page_index = -1
@@ -141,21 +134,63 @@ class Word:
             self.ranked_pages.append(ranked_page)
         elif ranked_page.score > self.ranked_pages[worst_page_index].score:
             self.ranked_pages[worst_page_index] = ranked_page
-        
 
-# dict word(str) -> Word
-words = dict()
+    def value(self):
+        return [ranked_page.value() for ranked_page in self.ranked_pages]
 
-for url, page in pages.items():
-    total_word_count = sum(page['words'].values())
-    for word_value, word_count in page['words'].items():
-        word_score = (float(word_count) / total_word_count) * page['rank']
-        ranked_page = RankedPage(url, word_score)
-        ranked_word = words.get(word_value)
-        if ranked_word == None:
-            ranked_word = Word(word_value)
-            words[word_value] = ranked_word
-        ranked_word.add(ranked_page)
+    def load(value):
+        to_return = Word(list())
+        to_return.ranked_pages = [RankedPage.load(ranked_page_value) for ranked_page_value in value]
+        return to_return
+
+if WORDS_FILE.exists():
+    words_object = json.load(open(WORDS_FILE))
+    print(f"Read from {str(WORDS_FILE)}")
+
+    words = dict()
+    for word_value, word in words_object.items():
+        words[word_value] = Word.load(word)
+
+else:
+    # Calculate page rank
+    for i in range(3):
+        for url, page in pages.items():
+            links = page["links"]
+            value_per_link = float(page["rank"]) / len(links)
+            for link in links:
+                linked_page = pages.get(link)
+                if linked_page != None:
+                    linked_page["rank"] += value_per_link
+
+        for page in pages.values():
+            page["rank"] = abs(math.log(page["rank"]))
+
+
+
+    # dict word(str) -> Word
+    words = dict()
+
+    # Build word lookup
+    for url, page in pages.items():
+        total_word_count = sum(page['words'].values())
+        for word_value, word_count in page['words'].items():
+            word_score = (float(word_count) / total_word_count) * page['rank']
+            ranked_page = RankedPage(url, word_score)
+            ranked_word = words.get(word_value)
+            if ranked_word == None:
+                ranked_word = Word(list())
+                words[word_value] = ranked_word
+            ranked_word.add(ranked_page)
+
+    words_object = dict()
+    for word_value, word in words.items():
+        words_object[word_value] = word.value()
+
+    words_json = json.dumps(words_object)
+
+    with open(WORDS_FILE, "w") as words_file:
+        words_file.write(words_json)
+        print(f"wrote to {str(WORDS_FILE)}")
 
 
 query = input('Enter search query: ')
