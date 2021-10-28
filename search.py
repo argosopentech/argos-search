@@ -70,7 +70,7 @@ class Page:
 pages = dict()
 
 
-def crawl(url, depth=1, jump_domains=True):
+def crawl(url, depth=2, jump_domains=True):
     print(
         "crawl_domain", f"url={url}", f"depth={depth}", f"jump_domains={jump_domains}"
     )
@@ -178,7 +178,7 @@ else:
     for i in range(3):
         for url, page in pages.items():
             links = page.links
-            value_per_link = float(page.rank) / len(links)
+            value_per_link = float(page.rank) / max(len(links), 1)
             for link in links:
                 linked_page = pages.get(link)
                 if linked_page != None:
