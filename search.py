@@ -10,13 +10,13 @@ from bs4 import BeautifulSoup, NavigableString
 
 PAGES_FILE = Path("pages.json")
 WORDS_FILE = Path("words.json")
-MAX_WORD_LENGTH = 20
-REQUEST_TIMEOUT = 20
+MAX_WORD_LENGTH = 2000
+REQUEST_TIMEOUT = 10
 
 
 def network_get(url):
-    req = request.Request(url, timeout=REQUEST_TIMEOUT)
-    response = request.urlopen(req)
+    req = request.Request(url)
+    response = request.urlopen(req, timeout=REQUEST_TIMEOUT)
     return response.read().decode()
 
 
@@ -186,7 +186,7 @@ else:
                     linked_page.rank += value_per_link
 
         for page in pages.values():
-            page.rank = abs(math.log(page.rank))
+            page.rank = abs(math.log(max(page.rank, 1)))
 
     # dict word(str) -> Word
     words = dict()
