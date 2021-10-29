@@ -28,6 +28,21 @@ def get_text(bs):
     return " ".join([get_text(content) for content in bs.contents])
 
 
+class Link:
+    def __init__(self, link, blank=False):
+        if not blank:
+            self.url = str(link["href"])
+            self.words = get_text(link).split(" ")
+
+    def value(self):
+        return {"url": self.url, "words": self.words}
+
+    def load(value):
+        to_return = Link("", blank=True)
+        to_return.url = value["url"]
+        to_return.words = value["words"]
+
+
 class Page:
     def __init__(self, url, get_page=True):
         self.url = url
@@ -44,7 +59,7 @@ class Page:
                 )
             )
             soup = BeautifulSoup(raw_text, features="html.parser")
-            self.links = [str(link["href"]) for link in soup.find_all("a")][
+            self.links = [Link(link) for link in soup.find_all("a")][
                 :MAX_LINKS_PER_PAGE
             ]
             text = get_text(soup)
@@ -53,14 +68,14 @@ class Page:
     def value(self):
         return {
             "url": self.url,
-            "links": self.links,
+            "links": [link.value() for link in self.links],
             "rank": self.rank,
             "words": self.words,
         }
 
     def load(value):
         to_return = Page(value["url"], False)
-        to_return.links = value["links"]
+        to_return.links = [Link.load(link) for link in value["links"]]
         to_return.rank = value["rank"]
         to_return.words = value["words"]
 
@@ -88,7 +103,7 @@ def crawl(url, depth=SEARCH_DEPTH):
     if depth > 0:
         for link in page.links:
             try:
-                to_return += crawl(link, depth - 1)
+                to_return += crawl(link.url, depth - 1)
             except:
                 pass
     return to_return
@@ -181,7 +196,7 @@ else:
             links = page.links
             value_per_link = float(page.rank) / max(len(links), 1)
             for link in links:
-                linked_page = pages.get(link)
+                linked_page = pages.get(link.url)
                 if linked_page != None:
                     linked_page.rank += value_per_link
 
@@ -190,6 +205,27 @@ else:
 
     # dict word(str) -> Word
     words = dict()
+
+    # Calculate links
+
+    # dict word(str) -> (dict url(str) -> score)
+    link_score = dict()
+
+    for url, page in pages.items():
+        for link in page.links:
+            for word in link.words:
+                if link_score.get(word) is None:
+                    link_score[word] = defaultdict(float)
+                link_score[word][link.url] = link_score[word][link.url] + page.rank
+    for word, score_dict in link_score.items():
+        for page, score in score_dict.items():
+            score = math.log(max(1, score))
+            ranked_page = RankedPage(page, score)
+            ranked_word = words.get(word)
+            if ranked_word == None:
+                ranked_word = Word(list())
+                words[word] = ranked_word
+            ranked_word.add(ranked_page)
 
     # Build word lookup
     for url, page in pages.items():
