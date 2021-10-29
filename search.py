@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 import bs4
 from bs4 import BeautifulSoup, NavigableString
 
+SEARCH_DEPTH = 3
 PAGES_FILE = Path("pages.json")
 WORDS_FILE = Path("words.json")
 MAX_WORD_LENGTH = 2000
@@ -74,7 +75,7 @@ class Page:
 pages = dict()
 
 
-def crawl(url, depth=2, jump_domains=True):
+def crawl(url, depth=SEARCH_DEPTH, jump_domains=True):
     print(
         "crawl_domain", f"url={url}", f"depth={depth}", f"jump_domains={jump_domains}"
     )
