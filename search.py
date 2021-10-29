@@ -12,6 +12,7 @@ PAGES_FILE = Path("pages.json")
 WORDS_FILE = Path("words.json")
 MAX_WORD_LENGTH = 2000
 REQUEST_TIMEOUT = 10
+MAX_LINKS_PER_PAGE = 30
 
 
 def network_get(url):
@@ -42,7 +43,9 @@ class Page:
                 )
             )
             soup = BeautifulSoup(raw_text, features="html.parser")
-            self.links = [str(link["href"]) for link in soup.find_all("a")]
+            self.links = [str(link["href"]) for link in soup.find_all("a")][
+                :MAX_LINKS_PER_PAGE
+            ]
             text = get_text(soup)
             self.rank = 1
 
@@ -236,4 +239,3 @@ def run_search(query):
     )
 
     return ranked_results
-
