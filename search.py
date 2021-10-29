@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 import bs4
 from bs4 import BeautifulSoup, NavigableString
 
-SEARCH_DEPTH = 3
+SEARCH_DEPTH = 4
 PAGES_FILE = Path("pages.json")
 WORDS_FILE = Path("words.json")
 MAX_WORD_LENGTH = 2000
@@ -75,10 +75,8 @@ class Page:
 pages = dict()
 
 
-def crawl(url, depth=SEARCH_DEPTH, jump_domains=True):
-    print(
-        "crawl_domain", f"url={url}", f"depth={depth}", f"jump_domains={jump_domains}"
-    )
+def crawl(url, depth=SEARCH_DEPTH):
+    print("crawl_domain", f"url={url}", f"depth={depth}")
     if str(url) in pages.keys():
         return list()
     try:
@@ -90,9 +88,7 @@ def crawl(url, depth=SEARCH_DEPTH, jump_domains=True):
     if depth > 0:
         for link in page.links:
             try:
-                if (not jump_domains) and link.domain != page.url.domain:
-                    continue
-                to_return += crawl(link, depth - 1, jump_domains)
+                to_return += crawl(link, depth - 1)
             except:
                 pass
     return to_return
@@ -219,6 +215,7 @@ else:
 
 
 def search(query):
+    query = query.lower()
     query_words = list(filter(lambda x: len(x) < MAX_WORD_LENGTH, query.split(" ")))
     results = defaultdict(int)  # url (str) -> score (float)
 
