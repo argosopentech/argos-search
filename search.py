@@ -11,10 +11,11 @@ from bs4 import BeautifulSoup, NavigableString
 PAGES_FILE = Path("pages.json")
 WORDS_FILE = Path("words.json")
 MAX_WORD_LENGTH = 20
+REQUEST_TIMEOUT = 20
 
 
 def network_get(url):
-    req = request.Request(url)
+    req = request.Request(url, timeout=REQUEST_TIMEOUT)
     response = request.urlopen(req)
     return response.read().decode()
 
