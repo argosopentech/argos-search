@@ -79,7 +79,7 @@ def crawl(url, depth=SEARCH_DEPTH, jump_domains=True):
     print(
         "crawl_domain", f"url={url}", f"depth={depth}", f"jump_domains={jump_domains}"
     )
-    if str(url) in pages.values():
+    if str(url) in pages.keys():
         return list()
     try:
         page = Page(url)
