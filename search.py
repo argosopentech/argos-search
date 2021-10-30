@@ -230,17 +230,19 @@ if WORDS_FILE.exists():
 
 else:
     # Calculate page rank
+    for url, page in pages.items():
+        page.points = 1000000
     for i in range(3):
         for url, page in pages.items():
             links = page.links
-            value_per_link = math.exp(page.rank - 1) / max(len(links), 1)
+            value_per_link = math.exp(page.rank) / max(len(links), 1)
             for link in links:
                 linked_page = pages.get(link.url)
                 if linked_page != None:
-                    linked_page.rank += value_per_link
+                    linked_page.points += value_per_link
 
         for page in pages.values():
-            page.rank = abs(math.log(max(page.rank, 1)))
+            page.rank += abs(math.log(max(page.points, 1)))
 
     # dict word(str) -> Word
     words = dict()
