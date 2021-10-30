@@ -29,16 +29,51 @@ def get_text(bs):
 
 
 class Link:
-    def __init__(self, link, blank=False):
-        if not blank:
-            self.url = str(link["href"])
-            self.words = get_text(link).split(" ")
+    def parse_url(url):
+        """Parse a url string.
+
+        Return tuple (protocol, domain, path) or None
+        """
+        colon_index = url.find("://")
+        if colon_index < 0:
+            return None
+        protocol = url[:colon_index]
+        domain_start = colon_index + len("://")
+        domain_end = url.find("/", domain_start)
+        if domain_end < 0:
+            return None
+        domain = url[domain_start:domain_end]
+        path = url[domain_end:]
+        return (protocol, domain, path)
+
+    def resolve_url(url, context):
+        parsed_url = Link.parse_url(url)
+        if parsed_url is not None:
+            return url
+        else:
+            parsed_context = Link.parse_url(context)
+            if parsed_context is None:
+                return None
+            context_protocol, context_domain, _ = parsed_context
+            relative_url = context_protocol + "://" + context_domain + url
+            parsed_url = Link.parse_url(relative_url)
+            if parsed_url is None:
+                return None
+            return relative_url
+
+    def create(link, context=""):
+        to_return = Link()
+        to_return.url = Link.resolve_url(str(link["href"]), context)
+        if to_return.url is None:
+            return None
+        to_return.words = get_text(link).split(" ")
+        return to_return
 
     def value(self):
         return {"url": self.url, "words": self.words}
 
     def load(value):
-        to_return = Link("", blank=True)
+        to_return = Link()
         to_return.url = value["url"]
         to_return.words = value["words"]
 
@@ -59,9 +94,12 @@ class Page:
                 )
             )
             soup = BeautifulSoup(raw_text, features="html.parser")
-            self.links = [Link(link) for link in soup.find_all("a")][
-                :MAX_LINKS_PER_PAGE
-            ]
+            self.links = list(filter(
+                lambda x: x is not None,
+                [Link.create(link, context=self.url) for link in soup.find_all("a")][
+                    :MAX_LINKS_PER_PAGE
+                ],
+            ))
             text = get_text(soup)
             self.rank = 1
 
@@ -81,6 +119,7 @@ class Page:
 
     def __str__(self):
         return f"Page: {self.url}"
+
 
 
 # Dict url(str) -> Page.value()
