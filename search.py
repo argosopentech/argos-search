@@ -94,12 +94,15 @@ class Page:
                 )
             )
             soup = BeautifulSoup(raw_text, features="html.parser")
-            self.links = list(filter(
-                lambda x: x is not None,
-                [Link.create(link, context=self.url) for link in soup.find_all("a")][
-                    :MAX_LINKS_PER_PAGE
-                ],
-            ))
+            self.links = list(
+                filter(
+                    lambda x: x is not None,
+                    [
+                        Link.create(link, context=self.url)
+                        for link in soup.find_all("a")
+                    ][:MAX_LINKS_PER_PAGE],
+                )
+            )
             text = get_text(soup)
             self.rank = 1
 
@@ -120,7 +123,6 @@ class Page:
 
     def __str__(self):
         return f"Page: {self.url}"
-
 
 
 # Dict url(str) -> Page.value()
@@ -255,9 +257,7 @@ else:
             for word in link.words:
                 if link_score.get(word) is None:
                     link_score[word] = defaultdict(float)
-                link_score[word][link.url] = link_score[word][link.url] + math.exp(
-                    page.rank
-                )
+                link_score[word][link.url] = link_score[word][link.url] + page.rank
     for word, score_dict in link_score.items():
         for page, score in score_dict.items():
             score = math.log(max(1, score))
