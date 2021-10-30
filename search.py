@@ -8,10 +8,10 @@ from collections import Counter, defaultdict
 import bs4
 from bs4 import BeautifulSoup, NavigableString
 
-SEARCH_DEPTH = 4
+SEARCH_DEPTH = 1
 PAGES_FILE = Path("pages.json")
 WORDS_FILE = Path("words.json")
-MAX_WORD_LENGTH = 2000
+MAX_WORD_LENGTH = 15
 REQUEST_TIMEOUT = 10
 MAX_LINKS_PER_PAGE = 30
 
@@ -82,9 +82,6 @@ class Page:
     def __str__(self):
         return f"Page: {self.url}"
 
-    def __repr__(self):
-        return str(self)
-
 
 # Dict url(str) -> Page.value()
 pages = dict()
@@ -92,20 +89,19 @@ pages = dict()
 
 def crawl(url, depth=SEARCH_DEPTH):
     print("crawl_domain", f"url={url}", f"depth={depth}")
-    if str(url) in pages.keys():
+    if pages.get(url) is not None:
         return list()
     try:
         page = Page(url)
-    except:
+    except Exception as e:
+        print(e)
         return list()
-    pages[str(url)] = page
-    to_return = [page]
+    pages[url] = page
+    to_return = list()
+    to_return.append(page)
     if depth > 0:
         for link in page.links:
-            try:
-                to_return += crawl(link.url, depth - 1)
-            except:
-                pass
+            to_return += crawl(link.url, depth - 1)
     return to_return
 
 
@@ -137,7 +133,7 @@ else:
         print(f"wrote to {str(PAGES_FILE)}")
 
 
-class RankedPage:
+class ScoredPage:
     def __init__(self, url, score):
         self.url = url
         self.score = score
@@ -146,37 +142,37 @@ class RankedPage:
         return {"url": self.url, "score": self.score}
 
     def load(value):
-        return RankedPage(value["url"], value["score"])
+        return ScoredPage(value["url"], value["score"])
 
 
 class Word:
-    RANKED_PAGES_COUNT = 10
+    SCORED_PAGES_COUNT = 10
 
-    def __init__(self, ranked_pages):
-        self.ranked_pages = ranked_pages
+    def __init__(self, scored_pages):
+        self.scored_pages = scored_pages
 
-    def add(self, ranked_page):
+    def add(self, scored_page):
         worst_page_index = -1
-        for i in range(len(self.ranked_pages)):
-            current_page = self.ranked_pages[i]
+        for i in range(len(self.scored_pages)):
+            current_page = self.scored_pages[i]
             if (
                 worst_page_index == -1
-                or current_page.score < self.ranked_pages[worst_page_index].score
+                or current_page.score < self.scored_pages[worst_page_index].score
             ):
                 worst_page_index = i
 
-        if len(self.ranked_pages) < Word.RANKED_PAGES_COUNT:
-            self.ranked_pages.append(ranked_page)
-        elif ranked_page.score > self.ranked_pages[worst_page_index].score:
-            self.ranked_pages[worst_page_index] = ranked_page
+        if len(self.scored_pages) < Word.SCORED_PAGES_COUNT:
+            self.scored_pages.append(scored_page)
+        elif scored_page.score > self.scored_pages[worst_page_index].score:
+            self.scored_pages[worst_page_index] = scored_page
 
     def value(self):
-        return [ranked_page.value() for ranked_page in self.ranked_pages]
+        return [scored_page.value() for scored_page in self.scored_pages]
 
     def load(value):
         to_return = Word(list())
-        to_return.ranked_pages = [
-            RankedPage.load(ranked_page_value) for ranked_page_value in value
+        to_return.scored_pages = [
+            ScoredPage.load(scored_page_value) for scored_page_value in value
         ]
         return to_return
 
@@ -194,7 +190,7 @@ else:
     for i in range(3):
         for url, page in pages.items():
             links = page.links
-            value_per_link = float(page.rank) / max(len(links), 1)
+            value_per_link = math.exp(page.rank) / max(len(links), 1)
             for link in links:
                 linked_page = pages.get(link.url)
                 if linked_page != None:
@@ -207,37 +203,39 @@ else:
     words = dict()
 
     # Calculate links
-
     # dict word(str) -> (dict url(str) -> score)
     link_score = dict()
-
     for url, page in pages.items():
         for link in page.links:
             for word in link.words:
                 if link_score.get(word) is None:
                     link_score[word] = defaultdict(float)
-                link_score[word][link.url] = link_score[word][link.url] + page.rank
+                link_score[word][link.url] = link_score[word][link.url] + math.exp(
+                    page.rank
+                )
     for word, score_dict in link_score.items():
         for page, score in score_dict.items():
             score = math.log(max(1, score))
-            ranked_page = RankedPage(page, score)
+            scored_page = ScoredPage(page, score)
             ranked_word = words.get(word)
             if ranked_word == None:
                 ranked_word = Word(list())
                 words[word] = ranked_word
-            ranked_word.add(ranked_page)
+            ranked_word.add(scored_page)
 
     # Build word lookup
     for url, page in pages.items():
         total_word_count = sum(page.words.values())
         for word_value, word_count in page.words.items():
-            word_score = (float(word_count) / total_word_count) * page.rank
-            ranked_page = RankedPage(url, word_score)
+            word_score = math.log(
+                max(1, (float(word_count) / total_word_count) * math.exp(page.rank))
+            )
+            scored_page = ScoredPage(url, word_score)
             ranked_word = words.get(word_value)
             if ranked_word == None:
                 ranked_word = Word(list())
                 words[word_value] = ranked_word
-            ranked_word.add(ranked_page)
+            ranked_word.add(scored_page)
 
     words_object = dict()
     for word_value, word in words.items():
@@ -258,9 +256,9 @@ def search(query):
     for query_word in query_words:
         ranked_word = words.get(query_word)
         if ranked_word is not None:
-            ranked_pages = ranked_word.ranked_pages
-            if len(ranked_pages) > 0:
-                for page in ranked_pages:
+            scored_pages = ranked_word.scored_pages
+            if len(scored_pages) > 0:
+                for page in scored_pages:
                     results[page.url] += page.score
     return results
 
