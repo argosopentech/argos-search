@@ -229,7 +229,7 @@ else:
     for i in range(3):
         for url, page in pages.items():
             links = page.links
-            value_per_link = math.exp(page.rank) / max(len(links), 1)
+            value_per_link = math.exp(page.rank - 1) / max(len(links), 1)
             for link in links:
                 linked_page = pages.get(link.url)
                 if linked_page != None:
