@@ -116,6 +116,7 @@ class Page:
         to_return.links = [Link.load(link) for link in value["links"]]
         to_return.rank = value["rank"]
         to_return.words = value["words"]
+        return to_return
 
     def __str__(self):
         return f"Page: {self.url}"
@@ -214,6 +215,9 @@ class Word:
             ScoredPage.load(scored_page_value) for scored_page_value in value
         ]
         return to_return
+
+
+pages = dict(filter(lambda x: x[1] is not None, pages.items()))
 
 
 if WORDS_FILE.exists():
