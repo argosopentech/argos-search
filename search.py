@@ -191,7 +191,7 @@ class ScoredPage:
 
 
 class Word:
-    SCORED_PAGES_COUNT = 10
+    SCORED_PAGES_COUNT = 50
 
     def __init__(self, scored_pages):
         self.scored_pages = scored_pages
@@ -255,7 +255,8 @@ else:
     # dict word(str) -> Word
     words = dict()
 
-    # Calculate links
+    # Add links to words dict
+
     # dict word(str) -> (dict url(str) -> score)
     link_score = dict()
     for url, page in pages.items():
@@ -263,7 +264,9 @@ else:
             for word in link.words:
                 if link_score.get(word) is None:
                     link_score[word] = defaultdict(float)
-                link_score[word][link.url] = link_score[word][link.url] + page.rank
+                link_score[word][link.url] = link_score[word][link.url] + math.exp(
+                    page.rank
+                )
     for word, score_dict in link_score.items():
         for page, score in score_dict.items():
             score = math.log(max(1, score))
@@ -274,7 +277,7 @@ else:
                 words[word] = ranked_word
             ranked_word.add(scored_page)
 
-    # Build word lookup
+    # Add page content to words dict
     for url, page in pages.items():
         total_word_count = sum(page.words.values())
         for word_value, word_count in page.words.items():
