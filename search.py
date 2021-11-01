@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 import bs4
 from bs4 import BeautifulSoup, NavigableString
 
-SEARCH_DEPTH = 1
+SEARCH_DEPTH = 0
 PAGES_FILE = Path("pages.json")
 WORDS_FILE = Path("words.json")
 MAX_WORD_LENGTH = 15
@@ -76,6 +76,7 @@ class Link:
         to_return = Link()
         to_return.url = value["url"]
         to_return.words = value["words"]
+        return to_return
 
 
 class Page:
@@ -174,6 +175,8 @@ else:
         pages_file.write(pages_json)
         print(f"wrote to {str(PAGES_FILE)}")
 
+print(f"Scraped {len(pages.items())} pages")
+
 
 class ScoredPage:
     def __init__(self, url, score):
@@ -233,8 +236,8 @@ if WORDS_FILE.exists():
 else:
     # Calculate page rank
     for url, page in pages.items():
-        page.points = 1000000
-    for i in range(3):
+        page.points = 10
+    for i in range(2):
         for url, page in pages.items():
             links = page.links
             value_per_link = math.exp(page.rank) / max(len(links), 1)
@@ -245,6 +248,9 @@ else:
 
         for page in pages.values():
             page.rank += abs(math.log(max(page.points, 1)))
+    print(
+        f"Calculated PageRank avg={float(sum([page.rank for page in pages.values()])) / len(pages.items())}"
+    )
 
     # dict word(str) -> Word
     words = dict()
