@@ -2,7 +2,7 @@ import sys
 import math
 import json
 import csv
-from urllib import request
+import subprocess
 from pathlib import Path
 from collections import Counter, defaultdict
 import bs4
@@ -17,9 +17,8 @@ MAX_LINKS_PER_PAGE = 30
 
 
 def network_get(url):
-    req = request.Request(url)
-    response = request.urlopen(req, timeout=REQUEST_TIMEOUT)
-    return response.read().decode()
+    res = subprocess.run(["curl", url], capture_output=True)
+    return str(res.stdout)
 
 
 def get_text(bs):
@@ -93,11 +92,7 @@ class Page:
         self.url = url
         if get_page:
             raw_text = network_get(self.url)
-            self.words = dict(
-                Counter(
-                    get_words(raw_text)
-                )
-            )
+            self.words = dict(Counter(get_words(raw_text)))
             soup = BeautifulSoup(raw_text, features="html.parser")
             self.links = list(
                 filter(
