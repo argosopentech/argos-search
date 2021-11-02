@@ -28,6 +28,15 @@ def get_text(bs):
     return " ".join([get_text(content) for content in bs.contents])
 
 
+def get_words(s):
+    s = s.lower()
+    split = s.split(" ")
+    for meta_word_size in range(2, 4):
+        for i in range(0, len(split) - meta_word_size):
+            split.append(" ".join(split[i : i + meta_word_size]))
+    return list(filter(lambda x: len(x) < MAX_WORD_LENGTH, split))
+
+
 class Link:
     def parse_url(url):
         """Parse a url string.
@@ -66,7 +75,7 @@ class Link:
         to_return.url = Link.resolve_url(str(link["href"]), context)
         if to_return.url is None:
             return None
-        to_return.words = get_text(link).split(" ")
+        to_return.words = get_words(get_text(link))
         return to_return
 
     def value(self):
@@ -86,12 +95,7 @@ class Page:
             raw_text = network_get(self.url)
             self.words = dict(
                 Counter(
-                    list(
-                        filter(
-                            lambda x: len(x) < MAX_WORD_LENGTH,
-                            [word.lower() for word in raw_text.split(" ")],
-                        )
-                    )
+                    get_words(raw_text)
                 )
             )
             soup = BeautifulSoup(raw_text, features="html.parser")
@@ -304,7 +308,7 @@ else:
 
 def search(query):
     query = query.lower()
-    query_words = list(filter(lambda x: len(x) < MAX_WORD_LENGTH, query.split(" ")))
+    query_words = get_words(query())
     results = defaultdict(int)  # url (str) -> score (float)
 
     for query_word in query_words:
