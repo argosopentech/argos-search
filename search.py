@@ -71,7 +71,10 @@ class Link:
 
     def create(link, context=""):
         to_return = Link()
-        to_return.url = Link.resolve_url(str(link["href"]), context)
+        href = link.get("href")
+        if href is None:
+            return None
+        to_return.url = Link.resolve_url(str(href), context)
         if to_return.url is None:
             return None
         to_return.words = get_words(get_text(link))
@@ -326,6 +329,10 @@ def search(query):
     return results
 
 
+class Result:
+    pass
+
+
 def run_search(query):
     results = search(query)
 
@@ -333,9 +340,16 @@ def run_search(query):
         map(lambda x: x[0], sorted(results.items(), key=lambda x: x[1], reverse=True))
     )
 
-    # Add title
-    ranked_results = list(
-        map(lambda x: pages.get(x).title if pages.get(x) else x, ranked_results)
-    )
+    to_return = list()
+    for result in ranked_results:
+        page = pages.get(result)
+        to_add = Result()
+        if page is None:
+            to_add.url = result
+            to_add.title = result
+        else:
+            to_add.url = page.url
+            to_add.title = page.title
+        to_return.append(to_add)
 
-    return ranked_results
+    return to_return
