@@ -12,6 +12,5 @@ def index():
 @app.route('/search', methods=['GET', 'POST'])
 def search():
     q = request.form.get('q')
-    print(q)
     results = run_search(q)
     return render_template('search.html', results=results)

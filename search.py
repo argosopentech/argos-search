@@ -105,6 +105,14 @@ class Page:
             )
             text = get_text(soup)
             self.rank = 1
+            self.title = self.url
+            titles = soup.find_all("title")
+            if len(titles) > 0:
+                self.title = get_text(titles[0])
+            else:
+                h1s = soup.find_all("h1")
+                if len(h1s) > 0:
+                    self.title = get_text(h1s[0])
 
     def value(self):
         return {
@@ -112,6 +120,7 @@ class Page:
             "links": [link.value() for link in self.links],
             "rank": self.rank,
             "words": self.words,
+            "title": self.title,
         }
 
     def load(value):
@@ -119,6 +128,7 @@ class Page:
         to_return.links = [Link.load(link) for link in value["links"]]
         to_return.rank = value["rank"]
         to_return.words = value["words"]
+        to_return.title = value["title"]
         return to_return
 
     def __str__(self):
@@ -303,7 +313,7 @@ else:
 
 def search(query):
     query = query.lower()
-    query_words = get_words(query())
+    query_words = get_words(query)
     results = defaultdict(int)  # url (str) -> score (float)
 
     for query_word in query_words:
@@ -321,6 +331,11 @@ def run_search(query):
 
     ranked_results = list(
         map(lambda x: x[0], sorted(results.items(), key=lambda x: x[1], reverse=True))
+    )
+
+    # Add title
+    ranked_results = list(
+        map(lambda x: pages.get(x).title if pages.get(x) else x, ranked_results)
     )
 
     return ranked_results
