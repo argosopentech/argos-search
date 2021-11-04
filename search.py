@@ -231,9 +231,6 @@ class Word:
         return to_return
 
 
-pages = dict(filter(lambda x: x[1] is not None, pages.items()))
-
-
 if WORDS_FILE.exists():
     words_object = json.load(open(WORDS_FILE))
     print(f"Read from {str(WORDS_FILE)}")
