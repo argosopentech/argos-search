@@ -144,6 +144,9 @@ pages = dict()
 
 def crawl(url, depth=SEARCH_DEPTH):
     print("crawl_domain", f"url={url}", f"depth={depth}")
+    if pages.get(url) is not None and depth == 0:
+        # Don't redownload pages with no crawlable links
+        return
     try:
         page = Page(url)
     except Exception as e:
