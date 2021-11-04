@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Argos Search</title>
+    <style type="text/css">
+    #titleLink, #titleLink:visited {
+      text-decoration: none;
+      color: BLACK;
+    }
+    </style>
+  </head>
+  <body>
+    <a id="titleLink" href="https://github.com/argosopentech/argos-search"><h1>Argos Search</h1></a>
+    <form method="POST" action="/search">
+      <input type="text" id="q" name="q">
+      <input type="submit" value="Search">
+    </form>
+
+<!-- Start content -->
+{% block content %}{% endblock %}
+<!-- End content -->
+
+  </body>
+</html>  
