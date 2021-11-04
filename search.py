@@ -142,6 +142,7 @@ class Page:
 pages = dict()
 
 
+sys.setrecursionlimit(10**6)
 def crawl(url, depth=SEARCH_DEPTH):
     print("crawl_domain", f"url={url}", f"depth={depth}")
     page = pages.get(url)
