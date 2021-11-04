@@ -144,20 +144,14 @@ pages = dict()
 
 def crawl(url, depth=SEARCH_DEPTH):
     print("crawl_domain", f"url={url}", f"depth={depth}")
-    if pages.get(url) is not None:
-        return list()
     try:
         page = Page(url)
     except Exception as e:
         print(e)
-        return list()
-    pages[url] = page
-    to_return = list()
-    to_return.append(page)
+    if pages.get(url) is None: pages[url] = page
     if depth > 0:
         for link in page.links:
-            to_return += crawl(link.url, depth - 1)
-    return to_return
+            crawl(link.url, depth - 1)
 
 
 if PAGES_FILE.exists():
