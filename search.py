@@ -91,31 +91,32 @@ class Link:
 
 
 class Page:
-    def __init__(self, url, get_page=True):
-        self.url = url
-        if get_page:
-            raw_text = network_get(self.url)
-            self.words = dict(Counter(get_words(raw_text)))
-            soup = BeautifulSoup(raw_text, features="html.parser")
-            self.links = list(
-                filter(
-                    lambda x: x is not None,
-                    [
-                        Link.create(link, context=self.url)
-                        for link in soup.find_all("a")
-                    ][:MAX_LINKS_PER_PAGE],
-                )
+    def get(url):
+        to_return = Page()
+        to_return.url = url
+        raw_text = network_get(to_return.url)
+        to_return.words = dict(Counter(get_words(raw_text)))
+        soup = BeautifulSoup(raw_text, features="html.parser")
+        to_return.links = list(
+            filter(
+                lambda x: x is not None,
+                [
+                    Link.create(link, context=to_return.url)
+                    for link in soup.find_all("a")
+                ][:MAX_LINKS_PER_PAGE],
             )
-            text = get_text(soup)
-            self.rank = 1
-            self.title = self.url
-            titles = soup.find_all("title")
-            if len(titles) > 0:
-                self.title = get_text(titles[0])
-            else:
-                h1s = soup.find_all("h1")
-                if len(h1s) > 0:
-                    self.title = get_text(h1s[0])
+        )
+        text = get_text(soup)
+        to_return.rank = 1
+        to_return.title = to_return.url
+        titles = soup.find_all("title")
+        if len(titles) > 0:
+            to_return.title = get_text(titles[0])
+        else:
+            h1s = soup.find_all("h1")
+            if len(h1s) > 0:
+                to_return.title = get_text(h1s[0])
+        return to_return
 
     def value(self):
         return {
@@ -127,7 +128,8 @@ class Page:
         }
 
     def load(value):
-        to_return = Page(value["url"], False)
+        to_return = Page()
+        to_return.url = value["url"]
         to_return.links = [Link.load(link) for link in value["links"]]
         to_return.rank = value["rank"]
         to_return.words = value["words"]
@@ -142,13 +144,15 @@ class Page:
 pages = dict()
 
 
-sys.setrecursionlimit(10**6)
+sys.setrecursionlimit(10 ** 6)
+
+
 def crawl(url, depth=SEARCH_DEPTH):
     print("crawl_domain", f"url={url}", f"depth={depth}")
     page = pages.get(url)
     if page is None:
         try:
-            page = Page(url)
+            page = Page.get(url)
             pages[url] = page
         except Exception as e:
             print(e)
