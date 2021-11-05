@@ -281,7 +281,9 @@ else:
             if ranked_word == None:
                 ranked_word = Word(list())
                 words[word] = ranked_word
-            ranked_word.add(scored_page)
+            if pages.get(page) is not None:
+                # Don't rank pages that can't be downloaded
+                ranked_word.add(scored_page)
 
     # Add page content to words dict
     for url, page in pages.items():
