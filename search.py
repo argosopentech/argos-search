@@ -317,7 +317,7 @@ else:
 def search(query):
     query = query.lower()
     query_words = get_words(query)
-    results = defaultdict(int)  # url (str) -> score (float)
+    results = defaultdict(float)  # url (str) -> score (float)
 
     for query_word in query_words:
         ranked_word = words.get(query_word)
@@ -344,10 +344,7 @@ def run_search(query):
     for result in ranked_results:
         page = pages.get(result)
         to_add = Result()
-        if page is None:
-            to_add.url = result
-            to_add.title = result
-        else:
+        if page is not None:
             to_add.url = page.url
             to_add.title = page.title
         to_return.append(to_add)
