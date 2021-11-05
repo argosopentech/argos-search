@@ -17,7 +17,7 @@ MAX_LINKS_PER_PAGE = 30
 
 
 def network_get(url):
-    res = subprocess.run(["curl", url], capture_output=True)
+    res = subprocess.run(["curl", "--max-filesize", "100M", url], capture_output=True)
     return str(res.stdout)
 
 
