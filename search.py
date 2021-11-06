@@ -156,6 +156,7 @@ def crawl(url, depth=SEARCH_DEPTH):
             pages[url] = page
         except Exception as e:
             print(e)
+            return
     if depth > 0:
         for link in page.links:
             crawl(link.url, depth - 1)
