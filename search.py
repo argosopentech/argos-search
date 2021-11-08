@@ -278,6 +278,7 @@ else:
                 link_score[word][link.url] = link_score[word][link.url] + math.exp(
                     page.rank
                 )
+    print("Calculated link scores")
     for word, score_dict in link_score.items():
         for page, score in score_dict.items():
             score = math.log(max(1, score))
@@ -289,6 +290,7 @@ else:
             if pages.get(page) is not None:
                 # Don't rank pages that can't be downloaded
                 ranked_word.add(scored_page)
+    print("Added links to words dict")
 
     # Add page content to words dict
     for url, page in pages.items():
@@ -303,6 +305,7 @@ else:
                 ranked_word = Word(list())
                 words[word_value] = ranked_word
             ranked_word.add(scored_page)
+    print("Added page content to words dict")
 
     words_object = dict()
     for word_value, word in words.items():
