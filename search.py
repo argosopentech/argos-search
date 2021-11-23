@@ -95,6 +95,8 @@ class Page:
         to_return = Page()
         to_return.url = url
         raw_text = network_get(to_return.url)
+        if len(raw_text) > 10000000:
+            raise Exception('Too much text to parse')
         to_return.words = dict(Counter(get_words(raw_text)))
         soup = BeautifulSoup(raw_text, features="html.parser")
         to_return.links = list(
